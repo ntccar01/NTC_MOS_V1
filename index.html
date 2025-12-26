@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國立臺東專科學校員生社便當代訂系統</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f4f7f6; margin: 0; padding: 15px; line-height: 1.6; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        #login-mask { position: fixed; top:0; left:0; width:100%; height:100%; background:#1e3a8a; display:flex; justify-content:center; align-items:center; z-index:9999; }
+        .login-box { background:white; padding:40px; border-radius:15px; text-align:center; width: 90%; max-width: 400px; }
+        
+        .notice-bar { background: #d1e7dd; color: #0f5132; padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #198754; font-size: 0.9em; }
+        
+        .form-group { margin-bottom: 20px; }
+        label { font-weight: bold; display: block; margin-bottom: 8px; color: #1e3a8a; }
+        input[type="text"], input[type="tel"], input[type="password"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        
+        /* 菜單卡片樣式 */
+        .menu-item { background: #fff; border: 2px solid #e2e8f0; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .dish-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+        .dish-image { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; background: #eee; }
+        .dish-name { font-weight: bold; font-size: 1.2em; color: #1e293b; }
+
+        /* 規格選擇區 */
+        .option-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #f1f5f9; }
+        .option-label { font-size: 0.95em; color: #475569; flex-grow: 1; }
+        .option-price { color: #ef4444; font-weight: bold; margin: 0 10px; min-width: 50px; text-align: right; }
+        
+        /* 數量控制器 */
+        .qty-control { display: flex; align-items: center; gap: 5px; }
+        .btn-qty { width: 30px; height: 30px; border: 1px solid #cbd5e1; background: #fff; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-qty:active { background: #f1f5f9; }
+        .qty-input { width: 35px; text-align: center; border: none; font-size: 1.1em; font-weight: bold; background: none; }
+
+        /* 備註輸入框 */
+        .option-note { width: 100%; margin-top: 5px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 5px; font-size: 0.85em; display: none; }
+        .option-note.active { display: block; }
+
+        .btn-submit { background: #1e3a8a; color: white; border: none; padding: 16px; width: 100%; border-radius: 8px; cursor: pointer; font-size: 1.1em; font-weight: bold; margin-top: 15px; }
+        .btn-submit:disabled { background: #94a3b8; }
+
+        #floating-total {
+            position: fixed; bottom: 30px; right: 20px; background: #ef4444; color: white;
+            padding: 12px 25px; border-radius: 50px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            font-weight: bold; z-index: 999; display: none;
+        }
+
+        /* ----- 收據圖片樣式 ----- */
+        #receipt-container {
+            position: fixed; left: -9999px; top: 0;
+            width: 400px; background: white; padding: 20px;
+            border: 2px solid #1e3a8a; border-radius: 0;
+            font-family: "Microsoft JhengHei", sans-serif;
+            color: #000;
+        }
+        .receipt-title { text-align: center; font-size: 1.5em; font-weight: bold; color: #1e3a8a; margin-bottom: 10px; border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; }
+        .receipt-info { margin-bottom: 15px; font-size: 1em; line-height: 1.4; }
+        .receipt-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 0.9em; }
+        .receipt-table th { background: #f1f5f9; text-align: left; padding: 5px; border-bottom: 1px solid #000; }
+        .receipt-table td { padding: 5px; border-bottom: 1px dashed #ccc; vertical-align: top; }
+        .receipt-total { text-align: right; font-size: 1.2em; font-weight: bold; color: #ef4444; margin-top: 10px; border-top: 2px solid #000; padding-top: 10px; }
+
+        /* ----- 新增：截止時的鎖定樣式 ----- */
+        .disabled-ui {
+            opacity: 0.5;                /* 讓畫面變淡/變灰 */
+            filter: grayscale(80%);      /* 黑白濾鏡效果 */
+            pointer-events: none;        /* 禁止滑鼠點擊任何按鈕 */
+            user-select: none;           /* 禁止選取文字 */
+        }
+
+        /* ----- 新增：截止提醒小視窗 ----- */
+        #late-alert-box {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 3px solid #dc3545;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(0,0,0,0.5);
+            text-align: center;
+            z-index: 10000;
+            width: 80%;
+            max-width: 300px;
+            display: none; /* 預設隱藏 */
+        }
+        #late-alert-box h3 { margin: 0 0 10px 0; color: #dc3545; font-size: 1.3em; }
+        #late-alert-box p { margin: 0; font-weight: bold; color: #333; }
+    </style>
+</head>
+<body>
+
+<div id="login-mask">
+    <div class="login-box">
+        <h2 style="color:#1e3a8a;">🍱 員生社訂餐驗證</h2>
+        <input type="password" id="access-password" placeholder="請輸入代碼">
+        <button onclick="checkAccess()" style="margin-top:20px; padding:12px 0; background:#1e3a8a; color:white; border:none; border-radius:8px; width:100%; font-weight:bold; cursor:pointer;">進入系統</button>
+    </div>
+</div>
+
+<div id="late-alert-box">
+    <h3>⛔ 截止提醒</h3>
+    <p>今日訂購時間已截止<br>請洽員生社現場</p>
+</div>
+
+<div class="container" id="main-content" style="display:none;">
+    <div id="order-area">
+        <h2 style="color:#1e3a8a; text-align:center;">今日便當代訂</h2>
+        <div class="notice-bar">⏰ 提醒：每日 09:30 截止收單，系統自動關閉，若有問題請親洽員生社現場人員詢問。</div>
+
+        <form id="orderForm">
+            <div class="form-group"><label>班級 / 處室</label><input type="text" id="class" required></div>
+            <div class="form-group"><label>負責人姓名</label><input type="text" id="name" required></div>
+            
+            <div class="form-group">
+                <label>訂購人聯絡電話</label>
+                <input type="tel" id="phone" placeholder="請輸入手機號碼 (09xxxxxxxx)" maxlength="10" required>
+            </div>
+
+            <div id="dynamic-menu">🔍 載入菜單中...</div>
+            <button type="submit" id="submit-btn" class="btn-submit">確認送出訂單</button>
+        </form>
+    </div>
+
+    <div id="floating-total">🛒 總計：$ <span id="display-price">0</span></div>
+</div>
+
+<div id="receipt-container">
+    <div class="receipt-title">員生社訂購明細</div>
+    <div class="receipt-info" id="receipt-info"></div>
+    <table class="receipt-table">
+        <thead>
+            <tr>
+                <th width="65%">品項 (備註)</th>
+                <th width="15%">量</th>
+                <th width="20%">金額</th>
+            </tr>
+        </thead>
+        <tbody id="receipt-items"></tbody>
+    </table>
+    <div class="receipt-total" id="receipt-total"></div>
+    <div style="text-align:center; margin-top:10px; font-size:0.8em; color:#666;">* 請保留此圖片以供核對 *</div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDhI4QdbwUCx7ch-Js4XFIpQmaH03do7bo",
+        authDomain: "ntc-lunch-system-2025v1.firebaseapp.com",
+        projectId: "ntc-lunch-system-2025v1",
+        storageBucket: "ntc-lunch-system-2025v1.firebasestorage.app",
+        messagingSenderId: "235133418606",
+        appId: "1:235133418606:web:42ed342fa44dcf17c67a7f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const VARIATIONS = [
+        { id: 'normal', name: '正常 (不加價)', extra: 0 },
+        { id: 'rice', name: '加飯+15元', extra: 15 },
+        { id: 'dish1', name: '加1菜+10元', extra: 10 },
+        { id: 'dish2', name: '加2菜+20元', extra: 20 }
+    ];
+
+    // ✅ 更新後的登入邏輯
+    window.checkAccess = function() {
+        const input = document.getElementById('access-password').value.trim();
+        
+        // 設定現在時間與截止時間
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        const limitHour = 9;
+        const limitMinute = 30;
+
+        // 判斷是否遲了
+        const isLate = (currentHour > limitHour) || (currentHour === limitHour && currentMinute >= limitMinute);
+
+        // --- 1. 開發者模式 (永遠不鎖) ---
+        if (input === "test999") {
+            alert(`🔧 開發者模式\n時間：${currentHour}:${currentMinute}\n狀態：${isLate ? "已截止(特權進入)" : "開放中"}`);
+            grantAccess(); // 正常進入
+            return;
+        }
+
+        // --- 2. 一般使用者模式 ---
+        if (input === "ntc1234") {
+            if (isLate) {
+                // 若遲了：雖然進入，但鎖住介面
+                grantAccess(); 
+                lockInterface(); // 執行鎖定特效
+            } else {
+                // 若沒遲：正常進入
+                grantAccess();
+            }
+            return;
+        }
+
+        alert("❌ 代碼錯誤");
+    };
+
+    // 顯示主畫面並載入菜單
+    function grantAccess() {
+        document.getElementById('login-mask').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        document.getElementById('floating-total').style.display = 'flex';
+        loadMenu();
+    }
+
+    // 🔒 鎖定介面的特效函式
+    function lockInterface() {
+        // 1. 顯示「截止提醒」小視窗
+        document.getElementById('late-alert-box').style.display = 'block';
+        
+        // 2. 將表單區域加入「灰色+無法點擊」的樣式
+        document.getElementById('orderForm').classList.add('disabled-ui');
+        document.getElementById('floating-total').classList.add('disabled-ui');
+        
+        // 3. 隱藏送出按鈕 (雙重保險)
+        document.getElementById('submit-btn').style.display = 'none';
+    }
+
+    window.changeQty = function(btn, delta) {
+        const input = btn.parentElement.querySelector('.qty-input');
+        let val = parseInt(input.value) + delta;
+        if (val < 0) val = 0;
+        input.value = val;
+        
+        const note = btn.closest('.option-row').nextElementSibling;
+        if (val > 0) note.classList.add('active');
+        else note.classList.remove('active');
+        
+        updateTotal();
+    };
+
+    function updateTotal() {
+        let total = 0;
+        document.querySelectorAll('.qty-input').forEach(input => {
+            const qty = parseInt(input.value);
+            const base = parseInt(input.dataset.basePrice);
+            const extra = parseInt(input.dataset.extra);
+            total += qty * (base + extra);
+        });
+        document.getElementById('display-price').innerText = total;
+    }
+
+    async function loadMenu() {
+        const menuDiv = document.getElementById('dynamic-menu');
+        const querySnapshot = await getDocs(collection(db, "menu"));
+        let menuHtml = "";
+        
+        querySnapshot.forEach((doc) => {
+            const dish = doc.data();
+            const imgSrc = dish.img || 'https://placehold.co/200x200?text=無圖片';
+            
+            let varHtml = VARIATIONS.map(v => `
+                <div class="option-item">
+                    <div class="option-row">
+                        <span class="option-label">${v.name}</span>
+                        <span class="option-price">$${dish.price + v.extra}</span>
+                        <div class="qty-control">
+                            <button type="button" class="btn-qty" onclick="changeQty(this, -1)">-</button>
+                            <input type="text" class="qty-input" value="0" readonly 
+                                   data-dish-name="${dish.name}" 
+                                   data-variation="${v.name}" 
+                                   data-base-price="${dish.price}" 
+                                   data-extra="${v.extra}">
+                            <button type="button" class="btn-qty" onclick="changeQty(this, 1)">+</button>
+                        </div>
+                    </div>
+                    <input type="text" class="option-note" placeholder="👤 請填寫此項目的姓名或座號">
+                </div>
+            `).join('');
+
+            menuHtml += `
+                <div class="menu-item">
+                    <div class="dish-header">
+                        <img src="${imgSrc}" class="dish-image">
+                        <div class="dish-name">${dish.name}</div>
+                    </div>
+                    ${varHtml}
+                </div>`;
+        });
+        menuDiv.innerHTML = menuHtml;
+    }
+
+    document.getElementById('orderForm').onsubmit = async (e) => {
+        e.preventDefault();
+        
+        const phoneInput = document.getElementById('phone');
+        const phoneValue = phoneInput.value.trim();
+        const phoneRegex = /^09\d{8}$/;
+        const className = document.getElementById('class').value;
+        const buyerName = document.getElementById('name').value;
+
+        if (!phoneValue) {
+            alert("❌ 請填寫訂購人聯絡電話！");
+            phoneInput.focus();
+            return;
+        }
+
+        if (!phoneRegex.test(phoneValue)) {
+            alert("❌ 電話格式錯誤！\n\n1. 必須是 09 開頭\n2. 必須是 10 碼數字\n3. 請勿包含 - 或空格\n\n範例：0912345678");
+            phoneInput.focus();
+            return;
+        }
+
+        const finalItems = [];
+        let totalAmount = 0;
+
+        try {
+            document.querySelectorAll('.qty-input').forEach(input => {
+                const qty = parseInt(input.value);
+                if (qty > 0) {
+                    const noteInput = input.closest('.option-item').querySelector('.option-note');
+                    const noteValue = noteInput.value.trim();
+                    
+                    if (!noteValue) {
+                        alert(`❌ 請填寫「${input.dataset.dishName} - ${input.dataset.variation}」的訂購人姓名！`);
+                        noteInput.focus();
+                        throw new Error("Missing Note");
+                    }
+
+                    const price = parseInt(input.dataset.basePrice) + parseInt(input.dataset.extra);
+                    finalItems.push({
+                        name: `${input.dataset.dishName} (${input.dataset.variation})`,
+                        qty: qty,
+                        price: price,
+                        note: noteValue,
+                        subtotal: qty * price
+                    });
+                    totalAmount += qty * price;
+                }
+            });
+        } catch(err) { return; } 
+
+        if (finalItems.length === 0) return alert("❌ 未選擇任何餐點");
+
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true; btn.innerText = "資料上傳與製圖中...";
+
+        try {
+            // 1. 上傳 Firebase
+            await addDoc(collection(db, "orders"), {
+                class: className,
+                name: buyerName,
+                phone: phoneValue,
+                order_items: finalItems,
+                total_amount: totalAmount,
+                order_time: serverTimestamp(),
+                paid: false
+            });
+
+            // 2. 準備圖片
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}`;
+            
+            document.getElementById('receipt-info').innerHTML = 
+                `時間：${timeStr}<br>班級：${className}<br>姓名：${buyerName}<br>電話：${phoneValue}`;
+            
+            let itemsHtml = "";
+            finalItems.forEach(item => {
+                itemsHtml += `
+                    <tr>
+                        <td>${item.name}<br><small style='color:#666'>(${item.note})</small></td>
+                        <td>${item.qty}</td>
+                        <td>$${item.subtotal}</td>
+                    </tr>`;
+            });
+            document.getElementById('receipt-items').innerHTML = itemsHtml;
+            document.getElementById('receipt-total').innerText = `總計 $${totalAmount}`;
+
+            // 3. 轉圖片下載
+            const receiptEl = document.getElementById('receipt-container');
+            await new Promise(r => setTimeout(r, 200));
+
+            const canvas = await html2canvas(receiptEl, {
+                scale: 2, 
+                backgroundColor: "#ffffff"
+            });
+
+            const link = document.createElement('a');
+            link.download = `訂單明細_${timeStr.replace(/[\/\s:]/g, '')}.jpg`;
+            link.href = canvas.toDataURL("image/jpeg");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            alert("✅ 訂單成功！圖片已下載，請確認。");
+            location.reload();
+
+        } catch (e) { 
+            console.error(e);
+            alert("⚠️ 訂單可能已送出，但圖片產生失敗。\n錯誤：" + e.message); 
+            btn.disabled = false; 
+            btn.innerText = "確認送出訂單";
+        }
+    };
+</script>
+</body>
+</html>
