@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>國立臺東專科學校員生社便當代訂系統</title>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<style>
+:root{--primary:#1e3a8a;--light:#eff6ff;--accent:#ef4444;--green:#059669;--bg:#f4f7f6;--border:#dbe3ee}
+*{box-sizing:border-box}body{font-family:"Microsoft JhengHei",sans-serif;background:var(--bg);margin:0;padding:14px;line-height:1.55;color:#1e293b}.container{max-width:760px;margin:auto;background:#fff;padding:22px;border-radius:15px;box-shadow:0 4px 15px #00000012}
+#login-mask{position:fixed;inset:0;background:var(--primary);display:flex;justify-content:center;align-items:center;z-index:9999}.login-box{background:#fff;padding:36px;border-radius:15px;text-align:center;width:90%;max-width:390px}.login-box input,.login-box button{width:100%;padding:12px;border-radius:8px;font-size:16px}.login-box input{border:1px solid #cbd5e1;text-align:center}.login-box button{margin-top:12px;border:0;background:var(--primary);color:#fff;font-weight:bold;cursor:pointer}
+h2{color:var(--primary)}.status-box{padding:12px 14px;border-radius:9px;margin-bottom:16px;font-weight:bold}.status-open{background:#ecfdf5;color:#065f46;border:1px solid #6ee7b7}.status-closed{background:#fff1f2;color:#9f1239;border:1px solid #fda4af}.notice{background:#f8fafc;border-left:5px solid var(--primary);padding:11px 13px;border-radius:8px;margin-bottom:18px;font-size:.92em}
+.form-group{margin-bottom:15px}label{display:block;font-weight:bold;color:var(--primary);margin-bottom:5px}input[type=text],input[type=tel],input[type=date],input[type=time],textarea,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:7px;font-size:16px;background:#fff}.disabled-ui{opacity:.45;pointer-events:none;filter:grayscale(60%)}.manual-class{display:none;margin-top:8px}.manual-class.active{display:block}.field-hint{font-size:.82em;color:#64748b;margin-top:4px}
+.category-title{background:var(--light);color:var(--primary);padding:8px 11px;border-left:4px solid var(--primary);border-radius:6px;margin:20px 0 10px;font-weight:bold}.menu-item{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:11px}.dish-line{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center}.dish-name{font-weight:bold;font-size:1.05em}.price{color:var(--accent);font-weight:bold}.qty{display:flex;align-items:center;gap:5px}.qty button{width:32px;height:32px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;font-size:18px;font-weight:bold}.qty input{width:45px;text-align:center;border:0;font-weight:bold;font-size:16px}.note{display:none;margin-top:9px}.note.active{display:block}.submit{width:100%;padding:14px;border:0;border-radius:8px;background:var(--primary);color:#fff;font-size:17px;font-weight:bold;margin-top:15px}.submit:disabled{background:#94a3b8}
+#floating-total{position:fixed;right:18px;bottom:20px;background:var(--accent);color:#fff;padding:10px 18px;border-radius:30px;font-weight:bold;display:none;z-index:500}
+.admin-panel{display:none;border:2px solid #f59e0b;background:#fffbeb;border-radius:12px;padding:15px;margin-bottom:20px}.admin-panel h3{margin:0 0 10px;color:#92400e}.admin-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px}.admin-actions button,.small-btn{border:0;border-radius:7px;padding:9px 12px;font-weight:bold;cursor:pointer}.b-open{background:#059669;color:#fff}.b-close{background:#dc2626;color:#fff}.b-auto{background:#475569;color:#fff}.b-save{background:#1e3a8a;color:#fff}.b-add{background:#0e7490;color:#fff}.schedule-table{width:100%;border-collapse:collapse;margin:8px 0 14px}.schedule-table th,.schedule-table td{border:1px solid #e5e7eb;padding:7px;text-align:left}.schedule-table input{font-size:14px;padding:7px}.hint{font-size:.82em;color:#64748b}.special-card{border:1px solid #e5e7eb;background:#fff;border-radius:8px;padding:10px;margin:8px 0}.special-grid{display:grid;grid-template-columns:150px 1fr 1fr auto;gap:8px;align-items:center}.remove{background:#fee2e2;color:#991b1b;border:0;border-radius:6px;padding:7px}.admin-status{background:#fff;padding:9px;border-radius:8px;margin-bottom:10px}.section-title{font-weight:bold;color:#92400e;margin-top:12px}
+#receipt-container{position:fixed;left:-9999px;top:0;width:420px;background:#fff;padding:20px;border:2px solid var(--primary)}.receipt-title{text-align:center;font-size:1.3em;font-weight:bold;color:var(--primary);border-bottom:2px solid var(--primary);padding-bottom:8px}.receipt-table{width:100%;border-collapse:collapse;font-size:.88em}.receipt-table td,.receipt-table th{padding:6px;border-bottom:1px solid #ddd}.receipt-total{text-align:right;font-weight:bold;font-size:1.1em;margin-top:10px}
+@media(max-width:620px){.container{padding:15px}.dish-line{grid-template-columns:1fr auto}.qty{grid-column:1/3;justify-content:flex-end}.special-grid{grid-template-columns:1fr}.schedule-table{font-size:13px}}
+</style>
+</head>
+<body>
+<div id="login-mask"><div class="login-box"><h2>🍱 員生社訂餐驗證</h2><p>請輸入代碼進入系統</p><input type="password" id="access-password" placeholder="請輸入代碼" autofocus><button onclick="checkAccess()">進入系統</button></div></div>
+
+<div class="container" id="main-content" style="display:none">
+<h2 style="text-align:center;margin-top:0">🍱 員生社 𡘙師傅便當代訂</h2>
+<div id="system-status" class="status-box">正在確認訂餐狀態...</div>
+
+<div id="admin-panel" class="admin-panel">
+  <h3>⚙️ 管理員訂餐控制台</h3>
+  <div id="admin-status" class="admin-status"></div>
+  <div class="admin-actions">
+    <button class="b-open" onclick="setManualMode('FORCE_OPEN')">🟢 立即開單</button>
+    <button class="b-close" onclick="setManualMode('FORCE_CLOSE')">🔴 立即停單</button>
+    <button class="b-auto" onclick="setManualMode('AUTO')">🔄 恢復自動排程</button>
+  </div>
+  <div class="section-title">📅 每週固定排程</div>
+  <div class="hint">一日可有多個時段，例如：<b>06:30-08:20, 08:40-09:05</b>；留空代表全天關閉。</div>
+  <table class="schedule-table"><thead><tr><th>星期</th><th>開放時段</th></tr></thead><tbody id="weekly-editor"></tbody></table>
+  <div class="section-title">📌 特殊日期</div>
+  <div class="hint">特殊日期會優先於每週排程；時段留空代表該日全天關閉。</div>
+  <div id="special-editor"></div>
+  <button class="small-btn b-add" onclick="addSpecialRow()">＋ 新增特殊日期</button>
+  <button class="small-btn b-save" style="margin-left:6px" onclick="saveSchedule()">💾 儲存排程</button>
+</div>
+
+<div class="notice">⏰ <b>訂餐規則：</b><br>1. 系統依管理員設定的開放時段自動開、停單。預設週一～週五 06:30～09:05，週六日關閉。<br>2. 班級/處室請優先使用下拉選單；若清單沒有，選「其他（手動輸入）」即可。<br>3. 每個便當固定單價，不提供加飯、加菜、醬料或單點加購。<br>4. 中午 12:00 請至員生社取餐。</div>
+
+<form id="orderForm">
+<div class="form-group">
+  <label>班級 / 處室 *</label>
+  <select id="class-select" required onchange="toggleManualClass()">
+    <option value="">正在載入班級/處室...</option>
+  </select>
+  <input type="text" id="class-manual" class="manual-class" placeholder="請輸入班級或處室名稱，例如：教學組">
+  <div class="field-hint">若為固定班級/處室，建議請管理員加入 Google Sheet「班級處室」清單，之後即可直接選擇。</div>
+</div>
+<div class="form-group"><label>負責人姓名 *</label><input type="text" id="name" required placeholder="請填寫領取便當的同學/同仁姓名"></div>
+<div class="form-group"><label>訂購人聯絡電話 *</label><input type="tel" id="phone" maxlength="10" required placeholder="09xxxxxxxx"></div>
+<div id="dynamic-menu">🔍 正在載入菜單...</div>
+<button type="submit" id="submit-btn" class="submit">確認送出訂單</button>
+</form>
+<div id="floating-total">🛒 總計：$<span id="display-price">0</span></div>
+</div>
+
+<div id="receipt-container"><div class="receipt-title">員生社便當訂購明細</div><div id="receipt-info"></div><table class="receipt-table"><thead><tr><th>品項/備註</th><th>數量</th><th>小計</th></tr></thead><tbody id="receipt-items"></tbody></table><div id="receipt-total" class="receipt-total"></div></div>
+
+<script>
+const GAS_WEB_APP_URL="https://script.google.com/macros/s/AKfycbwcP7sTmtMlspHEFQ2kZaXvDmT6NAIsyuSGGghuHuSq1YujGJ1SW2ZMEjeg6U0sPVzV/exec";
+const ADMIN_KEY="team777";
+const USER_KEY="ntc777";
+let isAdmin=false,currentStatus=null,currentSchedule=null;
+const FALLBACK_MENU=[
+{category:"主餐便當",name:"每日特餐(基本款)",price:70},{category:"主餐便當",name:"每日特餐(精緻款)",price:80},{category:"主餐便當",name:"三杯雞丁飯",price:90},{category:"主餐便當",name:"滷雞腿飯",price:90},
+{category:"現炸系列",name:"香酥雞腿飯",price:90},{category:"現炸系列",name:"無骨香雞排飯",price:105},{category:"現炸系列",name:"原味椒鹽去骨雞腿飯",price:105},{category:"現炸系列",name:"鯖魚飯",price:105},{category:"現炸系列",name:"泰式檸檬去骨雞腿飯",price:110},{category:"現炸系列",name:"去骨椒麻雞腿飯",price:110},{category:"現炸系列",name:"日式去骨雞腿飯",price:110},{category:"現炸系列",name:"古早味排骨飯",price:115},{category:"現炸系列",name:"烤豬排飯",price:115},{category:"現炸系列",name:"現炸豬排飯",price:115},{category:"現炸系列",name:"香雞排飯",price:125},{category:"現炸系列",name:"鹽酥大雞腿飯",price:125},{category:"現炸系列",name:"烤醬香雞排飯",price:130}];
+const FALLBACK_CLASSES=[{name:'汽車一',type:'班級'},{name:'汽車二',type:'班級'},{name:'汽車三',type:'班級'}];
+
+async function checkAccess(){
+ const key=document.getElementById('access-password').value.trim();
+ if(key!==ADMIN_KEY&&key!==USER_KEY){alert('❌ 驗證代碼錯誤');return}
+ isAdmin=key===ADMIN_KEY;
+ document.getElementById('login-mask').style.display='none';document.getElementById('main-content').style.display='block';document.getElementById('floating-total').style.display='block';
+ if(isAdmin){document.getElementById('admin-panel').style.display='block';await loadAdminSchedule()}
+ await Promise.all([refreshStatus(),loadMenu(),loadClassOptions()]);
+}
+
+async function refreshStatus(){
+ try{const r=await fetch(`${GAS_WEB_APP_URL}?action=getSystemStatus&_=${Date.now()}`);const j=await r.json();if(j.status!=='success')throw new Error(j.message);currentStatus=j.data;renderStatus()}catch(e){currentStatus={isOpen:false,message:'無法取得系統開放狀態，暫停訂餐'};renderStatus()}
+}
+function renderStatus(){
+ const box=document.getElementById('system-status'),form=document.getElementById('orderForm');
+ box.className='status-box '+(currentStatus.isOpen?'status-open':'status-closed');
+ box.innerHTML=(currentStatus.isOpen?'🟢 ':'🔴 ')+(currentStatus.message||'')+(currentStatus.time?`<br><small>伺服器時間：${currentStatus.date} ${currentStatus.time}</small>`:'');
+ form.classList.toggle('disabled-ui',!currentStatus.isOpen);document.getElementById('submit-btn').disabled=!currentStatus.isOpen;
+ if(isAdmin)document.getElementById('admin-status').innerHTML=`目前模式：<b>${modeLabel(currentSchedule?.mode||'AUTO')}</b>｜實際狀態：<b>${currentStatus.isOpen?'開放':'關閉'}</b><br>${currentStatus.message}`;
+}
+function modeLabel(m){return m==='FORCE_OPEN'?'強制開單':m==='FORCE_CLOSE'?'強制停單':'自動排程'}
+
+async function loadClassOptions(){
+ let data=FALLBACK_CLASSES;
+ try{const r=await fetch(`${GAS_WEB_APP_URL}?action=getClassOptions&_=${Date.now()}`);const j=await r.json();if(j.status==='success'&&Array.isArray(j.data)&&j.data.length)data=j.data}catch(e){}
+ const groups={};data.forEach(x=>(groups[x.type||'其他']??=[]).push(x));
+ let html='<option value="">請選擇班級 / 處室</option>';
+ Object.entries(groups).forEach(([type,items])=>{html+=`<optgroup label="${attr(type)}">`;items.forEach(x=>html+=`<option value="${attr(x.name)}">${esc(x.name)}</option>`);html+='</optgroup>'});
+ html+='<option value="__OTHER__">其他（手動輸入）</option>';
+ document.getElementById('class-select').innerHTML=html;
+}
+function toggleManualClass(){const manual=document.getElementById('class-manual'),other=document.getElementById('class-select').value==='__OTHER__';manual.classList.toggle('active',other);manual.required=other;if(!other)manual.value=''}
+function getSelectedClass(){const v=document.getElementById('class-select').value;if(v==='__OTHER__')return document.getElementById('class-manual').value.trim();return v.trim()}
+
+async function loadMenu(){
+ let menu=FALLBACK_MENU;
+ try{const r=await fetch(`${GAS_WEB_APP_URL}?action=getMenu&_=${Date.now()}`);const j=await r.json();if(j.status==='success'&&j.data?.length)menu=j.data}catch(e){}
+ const groups={};menu.forEach(x=>(groups[x.category||'便當品項']??=[]).push(x));
+ let html='';Object.entries(groups).forEach(([cat,items])=>{html+=`<div class="category-title">🍱 ${esc(cat)}</div>`;items.forEach(d=>{html+=`<div class="menu-item"><div class="dish-line"><div class="dish-name">${esc(d.name)}</div><div class="price">$${Number(d.price)}</div><div class="qty"><button type="button" onclick="changeQty(this,-1)">−</button><input class="qty-input" readonly value="0" data-name="${attr(d.name)}" data-price="${Number(d.price)}"><button type="button" onclick="changeQty(this,1)">＋</button></div></div><input class="note" type="text" placeholder="👤 請填寫此品項的座號 / 姓名"></div>`})});document.getElementById('dynamic-menu').innerHTML=html;
+}
+function changeQty(btn,delta){const input=btn.parentElement.querySelector('.qty-input');input.value=Math.max(0,(parseInt(input.value)||0)+delta);const note=btn.closest('.menu-item').querySelector('.note');note.classList.toggle('active',Number(input.value)>0);if(Number(input.value)===0)note.value='';updateTotal()}
+function updateTotal(){let t=0;document.querySelectorAll('.qty-input').forEach(i=>t+=(parseInt(i.value)||0)*Number(i.dataset.price||0));document.getElementById('display-price').textContent=t}
+
+document.getElementById('orderForm').addEventListener('submit',async e=>{
+ e.preventDefault();await refreshStatus();if(!currentStatus?.isOpen){alert('⛔ '+currentStatus.message);return}
+ const className=getSelectedClass();if(!className){alert('❌ 請選擇或輸入班級 / 處室');return}
+ const phone=document.getElementById('phone').value.trim();if(!/^09\d{8}$/.test(phone)){alert('❌ 電話需為 09 開頭的 10 碼數字');return}
+ const items=[];let total=0;
+ for(const i of document.querySelectorAll('.qty-input')){const qty=parseInt(i.value)||0;if(qty>0){const note=i.closest('.menu-item').querySelector('.note').value.trim();if(!note){alert(`❌ 請填寫「${i.dataset.name}」的座號/姓名`);return}const subtotal=qty*Number(i.dataset.price);items.push({name:i.dataset.name,qty,note,subtotal});total+=subtotal}}
+ if(!items.length){alert('❌ 請至少選擇一個便當');return}
+ const btn=document.getElementById('submit-btn');btn.disabled=true;btn.textContent='送出中...';
+ try{const payload={action:'submitOrder',class:className,name:document.getElementById('name').value.trim(),phone,order_items:items,total_amount:total,paid:false};const r=await fetch(GAS_WEB_APP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});const j=await r.json();if(j.status==='closed')throw new Error(j.message);if(j.status!=='success')throw new Error(j.message||'寫入失敗');await makeReceipt(items,total,j.class||className,j.order_id||'');alert('✅ 訂單送出成功！收據圖片已下載。');location.reload()}catch(err){alert('⚠️ '+err.message);btn.disabled=false;btn.textContent='確認送出訂單'}
+});
+async function makeReceipt(items,total,className,orderId){const now=new Date(),ts=now.toLocaleString('zh-TW');document.getElementById('receipt-info').innerHTML=`訂購時間：${ts}<br>班級/處室：${esc(className)}<br>負責人：${esc(document.getElementById('name').value)}<br>電話：${esc(document.getElementById('phone').value)}${orderId?`<br>訂單編號：${esc(orderId)}`:''}`;document.getElementById('receipt-items').innerHTML=items.map(x=>`<tr><td>${esc(x.name)}<br><small>${esc(x.note)}</small></td><td>${x.qty}</td><td>$${x.subtotal}</td></tr>`).join('');document.getElementById('receipt-total').textContent=`總計：$${total}`;const canvas=await html2canvas(document.getElementById('receipt-container'),{scale:2,backgroundColor:'#fff'});const a=document.createElement('a');a.download=`員生社訂單_${Date.now()}.jpg`;a.href=canvas.toDataURL('image/jpeg');a.click()}
+
+// ---------- 管理員排程 ----------
+const DAY_NAMES={MON:'星期一',TUE:'星期二',WED:'星期三',THU:'星期四',FRI:'星期五',SAT:'星期六',SUN:'星期日'};
+async function loadAdminSchedule(){try{const r=await fetch(`${GAS_WEB_APP_URL}?action=getSchedule&adminKey=${encodeURIComponent(ADMIN_KEY)}&_=${Date.now()}`);const j=await r.json();if(j.status!=='success')throw new Error(j.message);currentSchedule=j.data;renderScheduleEditor()}catch(e){alert('⚠️ 管理排程載入失敗：'+e.message)}}
+function intervalsToText(arr){return (arr||[]).map(x=>`${x.start}-${x.end}`).join(', ')}
+function renderScheduleEditor(){const w=currentSchedule.weekly||{};document.getElementById('weekly-editor').innerHTML=Object.keys(DAY_NAMES).map(k=>`<tr><td>${DAY_NAMES[k]}</td><td><input type="text" class="weekly-input" data-day="${k}" value="${attr(intervalsToText(w[k]))}" placeholder="例如 06:30-09:05"></td></tr>`).join('');document.getElementById('special-editor').innerHTML='';(currentSchedule.specials||[]).forEach(s=>addSpecialRow(s));}
+function addSpecialRow(s={date:'',intervals:[],note:'',closed:false}){const div=document.createElement('div');div.className='special-card';div.innerHTML=`<div class="special-grid"><input type="date" class="sp-date" value="${attr(s.date||'')}"><input type="text" class="sp-times" value="${attr(s.closed?'':intervalsToText(s.intervals))}" placeholder="06:30-09:05；留空=全天關閉"><input type="text" class="sp-note" value="${attr(s.note||'')}" placeholder="備註（選填）"><button class="remove" type="button" onclick="this.closest('.special-card').remove()">刪除</button></div>`;document.getElementById('special-editor').appendChild(div)}
+function parseIntervals(text){text=String(text||'').trim();if(!text)return[];return text.split(/[,，]/).map(x=>{const m=x.trim().match(/^([01]?\d|2[0-3]):([0-5]\d)\s*[-~～]\s*([01]?\d|2[0-3]):([0-5]\d)$/);if(!m)throw new Error('時段格式錯誤：'+x);const st=`${String(Number(m[1])).padStart(2,'0')}:${m[2]}`,en=`${String(Number(m[3])).padStart(2,'0')}:${m[4]}`;if(toMin(st)>=toMin(en))throw new Error('開始時間必須早於結束時間：'+x);return{start:st,end:en}})}
+function toMin(t){const [h,m]=t.split(':').map(Number);return h*60+m}
+async function saveSchedule(){try{const weekly={};document.querySelectorAll('.weekly-input').forEach(i=>weekly[i.dataset.day]=parseIntervals(i.value));const specials=[];document.querySelectorAll('.special-card').forEach(c=>{const date=c.querySelector('.sp-date').value;if(!date)throw new Error('特殊日期尚未選擇日期');const intervals=parseIntervals(c.querySelector('.sp-times').value);specials.push({date,intervals,closed:intervals.length===0,note:c.querySelector('.sp-note').value.trim()})});const r=await fetch(GAS_WEB_APP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'saveSchedule',adminKey:ADMIN_KEY,weekly,specials})});const j=await r.json();if(j.status!=='success')throw new Error(j.message);alert('✅ 排程已儲存');await loadAdminSchedule();await refreshStatus()}catch(e){alert('⚠️ '+e.message)}}
+async function setManualMode(mode){try{const r=await fetch(GAS_WEB_APP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'setManualMode',adminKey:ADMIN_KEY,mode})});const j=await r.json();if(j.status!=='success')throw new Error(j.message);currentSchedule.mode=mode;await refreshStatus();alert('✅ '+modeLabel(mode))}catch(e){alert('⚠️ '+e.message)}}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function attr(s){return esc(s)}
+</script>
+</body>
+</html>
